@@ -6,12 +6,12 @@ import time
 import sched
 from threading import Timer, Thread
 import selectors
-from constants
+import constants
 
-def send(data):
+def send(filename, data):
 
 	try:
-		sock = socket.socket()
+		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		print("SOCKET CREATED!")
 	except:
@@ -20,18 +20,24 @@ def send(data):
 
 	i = 0
 	while(True):
-		IP, PORT = constants.ORIGIN_SERVER_IPS[i%constants.NO_OF_ORIGIN_SERVERS]	
+		IP, PORT = constants.ORIGIN_SERVERS_CREDENTIALS[i%constants.NO_OF_ORIGIN_SERVERS]	
 		i = i + 1
 		try:
 			sock.connect((IP, PORT))
+			print(f"CONNECTED TO {IP} AT {PORT}")
 			break
 		except:
 			print(f"COULD NOT CONNECT TO {IP} AT {PORT}")
 			print("Retrying.. ")
-			time.sleep(10)
+			time.sleep(1)
 
-	
-
+	while(True):
+		try:
+			sock.send((filename+"/"+data).encode())
+			sock.close()
+			break
+		except:
+			print("Could not send data! Retrying..")
 
 if __name__ == "__main__":
-	send("0")
+	send("file1", "ho gya te to bc!")
