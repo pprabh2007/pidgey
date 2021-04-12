@@ -13,7 +13,8 @@ DATA = {}
 SERVER_INDEX = 1
 IP, STORE_PORT = constants.ORIGIN_SERVERS_STORE_CREDENTIALS[SERVER_INDEX]
 IP, REQUEST_PORT = constants.ORIGIN_SERVERS_REQUEST_CREDENTIALS[SERVER_INDEX]
-#SYNC_PORT = 
+SYNC_PORT = 11000
+
 store_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
 store_s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 store_s.bind(('', STORE_PORT)) 
@@ -23,6 +24,11 @@ request_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 request_s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 request_s.bind(('', REQUEST_PORT)) 
 request_s.listen(0)
+
+sync_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
+sync_s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+sync_s.bind(('', SYNC_PORT)) 
+sync_s.listen(0)
 
 def synchronise():
 	pass
@@ -60,6 +66,10 @@ if __name__ == '__main__':
 	t2 = Thread(target = content_requests_handler)
 	threads.append(t2)
 	t2.start()
+
+	t3 = Thread(target = synchronise)
+	threads.append(t3)
+	t3.start()
 
 	for t in threads:
 		t.join()

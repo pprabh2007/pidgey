@@ -61,5 +61,9 @@ if __name__ == '__main__':
 	threads.append(t2)
 	t2.start()
 
+	t3 = Thread(target = synchronise)
+	threads.append(t3)
+	t3.start()
+
 	for t in threads:
 		t.join()
