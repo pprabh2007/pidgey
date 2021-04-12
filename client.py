@@ -8,7 +8,8 @@ from threading import Timer, Thread
 import selectors
 import constants
 
-def send(filename, data):
+
+def request(filename):
 
 	try:
 		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -20,7 +21,7 @@ def send(filename, data):
 
 	i = 0
 	while(True):
-		IP, PORT = constants.ORIGIN_SERVERS_STORE_CREDENTIALS[i%constants.NO_OF_ORIGIN_SERVERS]	
+		IP, PORT = constants.ORIGIN_SERVERS_REQUEST_CREDENTIALS[i%constants.NO_OF_ORIGIN_SERVERS]	
 		i = i + 1
 		try:
 			sock.connect((IP, PORT))
@@ -33,7 +34,9 @@ def send(filename, data):
 
 	while(True):
 		try:
-			sock.send((filename+"/"+data).encode())
+			sock.send(filename.encode())
+			content = sock.recv(1024).decode("utf-8")
+			print(content)
 			sock.close()
 			break
 		except:
@@ -41,6 +44,5 @@ def send(filename, data):
 
 if __name__ == "__main__":
 	while(True):
-		filename = input()
-		data = input()
-		send(filename, data)
+		name = input()
+		request(name)
