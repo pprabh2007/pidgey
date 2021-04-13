@@ -24,9 +24,31 @@ request_s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 request_s.bind(('', REQUEST_PORT)) 
 request_s.listen(0)
 
-def synchronise():
-	pass
+sync_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+sync_s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+		
 
+def synchronise():
+	while(True):
+		IP, PORT = "localhost", constants.SYNC_PORT_2
+		try:
+			sync_s.connect((IP, PORT))
+			print(f"Syncing with {IP} AT {PORT}")
+			break
+		except:
+			print(f"COULD NOT SYNC WITH {IP} AT {PORT}")
+			print("Retrying.. ")
+			time.sleep(1)
+
+	while(True):
+		try:
+			n_1 = len(DATA.keys())
+			sync_s.send(n_1)
+			sync_s.close()
+			break
+		except:
+			print("Could not sync! Retrying..")
+	
 def store_content():
 	while(True):
 		store_c, store_addr = store_s.accept()
