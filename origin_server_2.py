@@ -7,8 +7,9 @@ import sched
 from threading import Timer, Thread
 import selectors
 import constants
+import copy
 
-DATA = {}
+DATA = {'b': "F"}
 
 SERVER_INDEX = 1
 IP, STORE_PORT = constants.ORIGIN_SERVERS_STORE_CREDENTIALS[SERVER_INDEX]
@@ -31,6 +32,29 @@ sync_s.listen(0)
 
 def synchronise():
 	sync_c, sync_addr = sync_s.accept()
+	while(True):
+		my_files = copy.deepcopy(list(DATA.keys()))
+		n_1 = int(sync_c.recv(1024).decode("utf-8"))
+		n_2 = len(my_files)
+		sync_c.send(str(n_2).encode())
+
+		for i in range(n_1):
+			filename = sync_c.recv(1024).decode()
+			if(filename in DATA.keys()):
+				sync_c.send(constants.FILE_FOUND.encode())
+			else:
+				sync_c.send(constants.FILE_NOT_FOUND.encode())
+				content = sync_c.recv(1024).decode()
+				DATA[filename] = content
+
+		for filename in my_files:
+			sync_c.send(filename.encode())
+			response = sync_c.recv(1024).decode()
+			if(response == constants.FILE_NOT_FOUND):
+				sync_c.send(DATA[filename].encode())
+			else:
+				pass
+		print(DATA)
 
 
 def store_content():
@@ -41,7 +65,6 @@ def store_content():
 		DATA[name] = content	
 		store_c.close()
 		print("Data Stored!")
-		synchronise():
 
 def content_requests_handler():
 	while(True):
@@ -68,9 +91,9 @@ if __name__ == '__main__':
 	threads.append(t2)
 	t2.start()
 
-	# t3 = Thread(target = synchronise)
-	# threads.append(t3)
-	# t3.start()
+	t3 = Thread(target = synchronise)
+	threads.append(t3)
+	t3.start()
 
 	for t in threads:
 		t.join()

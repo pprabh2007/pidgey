@@ -7,8 +7,9 @@ import sched
 from threading import Timer, Thread
 import selectors
 import constants
+import copy
 
-DATA = {}
+DATA = {'a': "lol"}
 
 SERVER_INDEX = 0
 IP, STORE_PORT = constants.ORIGIN_SERVERS_STORE_CREDENTIALS[SERVER_INDEX]
@@ -42,10 +43,29 @@ def synchronise():
 
 	while(True):
 		try:
-			n_1 = len(DATA.keys())
-			sync_s.send(n_1)
-			sync_s.close()
-			break
+			my_files = copy.deepcopy(list(DATA.keys()))
+			n_1 = len(my_files)
+			sync_s.send(str(n_1).encode())
+			n_2 = int(sync_s.recv(1024).decode())
+
+			for filename in my_files:
+				sync_s.send(filename.encode())
+				response = sync_s.recv(1024).decode()
+				if(response == constants.FILE_NOT_FOUND):
+					sync_s.send(DATA[filename].encode())
+				else:
+					pass
+
+			for i in range(n_2):
+				filename = sync_s.recv(1024).decode()
+				if(filename in DATA.keys()):
+					sync_s.send(constants.FILE_FOUND.encode())
+				else:
+					sync_s.send(constants.FILE_NOT_FOUND.encode())
+					content = sync_s.recv(1024).decode()
+					DATA[filename] = content
+			print(DATA)
+			time.sleep(20)
 		except:
 			print("Could not sync! Retrying..")
 	
@@ -72,7 +92,7 @@ def content_requests_handler():
 
 
 if __name__ == '__main__':
-
+	
 	threads = []
 	
 	t1 = Thread(target = store_content)
