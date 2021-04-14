@@ -46,9 +46,7 @@ def synchronise():
 			print(colored(f"SYNCING CAPABILITIES WITH {sync_addr} INITIALISED", constants.SUCCESS))
 			while(True):
 				my_files = copy.deepcopy(list(DATA.keys()))
-				n_1 = sync_c.recv(1024).decode("utf-8")
-				print(colored(f"|{n_1}|", constants.DEBUG))
-				n_1 = int(n_1)
+				n_1 = int(sync_c.recv(1024).decode("utf-8"))
 				n_2 = len(my_files)
 				sync_c.send(str(n_2).encode())
 

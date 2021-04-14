@@ -4,7 +4,7 @@ FAILURE='red'
 DEBUG='cyan'
 RETRY='yellow'
 
-TIMEOUT_PERIOD = 10
+TIMEOUT_PERIOD = 16
 SYNCING_PERIOD = 8
 
 ORIGIN_SERVERS_STORE_CREDENTIALS = [("localhost", 9999), ("localhost", 8999)]

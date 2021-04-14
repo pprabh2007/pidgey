@@ -68,8 +68,8 @@ def synchronise():
 						DATA[filename] = content
 				print(colored(str(DATA), constants.DEBUG))
 				print(colored(f"SYNCED SUCCESSFULLY!", constants.SUCCESS))
-				sync_s.close()
 				time.sleep(constants.SYNCING_PERIOD)
+			sync_s.close()
 		except Exception as err:
 			print(err)
 			print(colored(f"UNABLE TO SYNC WITH {IP} AT {PORT}. RETRYING..", constants.FAILURE))
