@@ -13,7 +13,7 @@ PORT = 6542        # The port used by the server
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
 s.connect((HOST, PORT))
 
-msg = Edge_LB(100,5)
+msg = Edge_LB(1,5)
 
 while True:
     print(msg.send(s))

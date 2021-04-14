@@ -49,7 +49,7 @@ while True:
 
 
     seqNo = -1
-    location_id = 10
+    location_id = 0
     n_msg = Client_LB_req(contentReq,location_id)
     prev_edge_ip = n_msg.prev_edge_ip
     while True:

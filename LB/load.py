@@ -16,6 +16,12 @@ WEIGHT_DISTANCE = 0.8
 WEIGHT_LOAD = 0.2
 MAX_CLIENT_REQUESTS= 10
 
+LOCATION = {}
+LOCATION[0] = (0.,0.)
+LOCATION[1] = (0.,1.)
+LOCATION[2] = (1.,0.)
+LOCATION[3] = (1.,1.)
+
 # locks and dicts
 edge_avail_dict = []
 edge_avail_lock  = Lock()
@@ -86,6 +92,10 @@ def recv_edge(conn,addr):
             break
     conn.close()
 
+def dist(loc_id1, loc_id2):
+	global LOCATION
+	print(LOCATION[loc_id1])
+	return (LOCATION[loc_id1][0]-LOCATION[loc_id2][0])**2 + (LOCATION[loc_id1][1]-LOCATION[loc_id2][1])**2
 
 def rcv_client(conn,addr):
     msg  = Client_LB_req()
