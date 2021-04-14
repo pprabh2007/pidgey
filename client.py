@@ -5,6 +5,7 @@ import os
 import time
 import sched
 from threading import Timer, Thread
+from termcolor import colored
 import selectors
 import constants
 

@@ -1,3 +1,14 @@
+#colors
+SUCCESS='green'
+FAILURE='red'
+DEBUG='grey'
+RETRY='yellow'
+
+
+
+
+
+
 ORIGIN_SERVERS_STORE_CREDENTIALS = [("localhost", 9999), ("localhost", 8999)]
 ORIGIN_SERVERS_REQUEST_CREDENTIALS = [("localhost", 10000), ("localhost", 9000)]
 SYNC_PORT_1 = 10001
