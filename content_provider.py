@@ -14,9 +14,9 @@ def send(filename, data):
 	try:
 		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-		print("SOCKET CREATED!")
+		print(colored("CONTENT PROVIDER INITIALISED", constants.SUCCESS))
 	except:
-		print("SOCKET COULD NOT BE CREATED!")
+		print(colored("UNABLE TO INITIALISE CONTENT PROVIDER", constants.FAILURE))
 		return
 
 	i = 0
@@ -28,17 +28,17 @@ def send(filename, data):
 			print(f"CONNECTED TO {IP} AT {PORT}")
 			break
 		except:
-			print(f"COULD NOT CONNECT TO {IP} AT {PORT}")
-			print("Retrying.. ")
+			print(colored(f"COULD NOT CONNECT TO {IP} AT {PORT}. RETRYING.. ", constants.FAILURE))
 			time.sleep(1)
 
 	while(True):
 		try:
 			sock.send((filename+"/"+data).encode())
 			sock.close()
+			print(colored(f"DATA SENT SUCCESSFULLY", constants.SUCCESS))
 			break
 		except:
-			print("Could not send data! Retrying..")
+			print(colored("COULD NOT SEND DATA. RETRYING.. ", constants.FAILURE))
 
 if __name__ == "__main__":
 	while(True):

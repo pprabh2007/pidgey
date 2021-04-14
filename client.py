@@ -10,36 +10,40 @@ import selectors
 import constants
 
 def request(filename):
-
-	try:
-		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-		#print("SOCKET CREATED!")
-	except:
-		print("SOCKET COULD NOT BE CREATED!")
-		return
-
+	while(True):
+		try:
+			sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+			print(colored("CLIENT INITIALISED", constants.SUCCESS))
+			break
+		except:
+			print(colored("COULD NOT INITIALISE CLIENT. RETRYING", constants.FAILURE))
+			
 	i = 0
 	while(True):
 		IP, PORT = constants.EDGE_SERVERS_REQUEST_CREDENTIALS[i%constants.NO_OF_EDGE_SERVERS]	
 		i = i + 1
 		try:
 			sock.connect((IP, PORT))
-			print(f"CONNECTED TO {IP} AT {PORT}")
+			print(colored(f"CONNECTED TO {IP} AT {PORT}", constants.SUCCESS))
 			break
 		except:
-			print(f"COULD NOT CONNECT TO {IP} AT {PORT}, Retrying..")
+			print(colored(f"COULD NOT CONNECT TO {IP} AT {PORT}. RETRYING..", constants.FAILURE))
 			time.sleep(1)
 
 	while(True):
 		try:
 			sock.send(filename.encode())
 			content = sock.recv(1024).decode("utf-8")
-			print(content)
+			if(content == constants.FILE_NOT_FOUND):
+				print(colored(f"FILE {filename} NOT FOUND", constants.FAILURE))
+			else:
+				print(colored(f"CONTENTS OF FILE {filename} ARE:", constants.SUCCESS))
+				print(content)
 			sock.close()
 			break
 		except:
-			print("Could not send data! Retrying..")
+			print(colored(f"UNABLE TO FETCH. RETRYING..", constants.FAILURE))
 
 if __name__ == "__main__":
 	while(True):

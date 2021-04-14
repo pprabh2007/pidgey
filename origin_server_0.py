@@ -28,8 +28,6 @@ while(True):
 		request_s.bind(('', REQUEST_PORT)) 
 		request_s.listen(0)
 
-		sync_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		sync_s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		print(colored(f"ORIGIN SERVER {SERVER_INDEX} INITIALISED SUCCESSFULLY", constants.SUCCESS))
 		break
 	except:
@@ -41,7 +39,9 @@ def synchronise():
 	while(True):
 		IP, PORT = "localhost", constants.SYNC_PORT_2
 		try:
-			sync_s.settimeout(10.0)
+			sync_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			sync_s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+			sync_s.settimeout(constants.TIMEOUT_PERIOD)
 			sync_s.connect((IP, PORT))
 			print(colored(f"SYNCING CAPABILITIES WITH {IP} AT {PORT} INITIALISED", constants.SUCCESS))
 			while(True):
@@ -68,9 +68,15 @@ def synchronise():
 						DATA[filename] = content
 				print(colored(str(DATA), constants.DEBUG))
 				print(colored(f"SYNCED SUCCESSFULLY!", constants.SUCCESS))
-				time.sleep(8)
-		except:
+				sync_s.close()
+				time.sleep(constants.SYNCING_PERIOD)
+		except Exception as err:
+			print(err)
 			print(colored(f"UNABLE TO SYNC WITH {IP} AT {PORT}. RETRYING..", constants.FAILURE))
+			try:
+				sync_s.close()
+			except:
+				pass
 			time.sleep(1)
 
 
@@ -102,8 +108,6 @@ def content_requests_handler():
 				request_c.send(constants.FILE_NOT_FOUND.encode())
 				print(colored(f"REQUESTED FILE NOT FOUND", constants.FAILURE))
 			request_c.close()
-
-			break
 		except:
 			print(colored(f"CONNECTION ERROR. PLEASE TRY AGAIN..", constants.FAILURE))
 

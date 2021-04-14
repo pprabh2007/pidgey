@@ -48,6 +48,7 @@ def get_from_origin_servers(filename):
 			sock.send(filename.encode())
 			content = sock.recv(1024).decode("utf-8")
 			if(content == constants.FILE_NOT_FOUND):
+				sock.close()
 				return False
 			else:
 				sock.close()
@@ -59,22 +60,27 @@ def get_from_origin_servers(filename):
 def content_requests_handler():
 	while(True):
 		request_c, request_addr = request_s.accept()
-		print("Accepted request from", request_addr)
 		name = request_c.recv(1024).decode("utf-8").strip()
-		print(name)
+		print(colored(f'FILE REQUESTED: {name}', constants.DEBUG))
 		if(name in CACHED_DATA.keys()):
 			request_c.send(CACHED_DATA[name].encode())
+			print(colored(f'CACHED COPY FOUND', constants.DEBUG))
+			print(colored(f'FILE SENT', constants.SUCCESS))
 		else:
-			print("Trying to import data")
+			print(colored("CACHED COPY NOT FOUND. IMPORTING FROM ORIGIN..", constants.DEBUG))
 			if(get_from_origin_servers(name)):
 				request_c.send(CACHED_DATA[name].encode())
+				print(colored("FOUND ON ORIGIN SERVER", constants.DEBUG))
+				print(colored(f'FILE SENT', constants.SUCCESS))
 			else:
-				print("Please wait.. Trying again")
-				time.sleep(20)
+				print(colored("NOT FOUND ON ORIGIN SERVER. TRYING AGAIN.. ", constants.DEBUG))
+				time.sleep(10)
 				if(get_from_origin_servers(name)):
 					request_c.send(CACHED_DATA[name].encode())
+					print(colored("FOUND ON ORIGIN SERVER", constants.DEBUG))
+					print(colored(f'FILE SENT', constants.SUCCESS))
 				else:
-					print("Data not found")
+					print(colored(f'FILE NOT AVAILABLE', constants.FAILURE))
 					request_c.send(constants.FILE_NOT_FOUND.encode())
 		request_c.close()
 

@@ -1,13 +1,11 @@
 #colors
 SUCCESS='green'
 FAILURE='red'
-DEBUG='grey'
+DEBUG='cyan'
 RETRY='yellow'
 
-
-
-
-
+TIMEOUT_PERIOD = 10
+SYNCING_PERIOD = 8
 
 ORIGIN_SERVERS_STORE_CREDENTIALS = [("localhost", 9999), ("localhost", 8999)]
 ORIGIN_SERVERS_REQUEST_CREDENTIALS = [("localhost", 10000), ("localhost", 9000)]

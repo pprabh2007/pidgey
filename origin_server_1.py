@@ -32,7 +32,7 @@ while(True):
 		sync_s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		sync_s.bind(('', constants.SYNC_PORT_2)) 
 		sync_s.listen(0)
-		sync_s.settimeout(10.0)
+		sync_s.settimeout(constants.TIMEOUT_PERIOD)
 		print(colored(f"ORIGIN SERVER {SERVER_INDEX} INITIALISED SUCCESSFULLY", constants.SUCCESS))
 		break
 	except:
@@ -42,11 +42,13 @@ def synchronise():
 	while(True):
 		try:
 			sync_c, sync_addr = sync_s.accept()
-			sync_c.settimeout(10.0)
+			sync_c.settimeout(constants.TIMEOUT_PERIOD)
 			print(colored(f"SYNCING CAPABILITIES WITH {sync_addr} INITIALISED", constants.SUCCESS))
 			while(True):
 				my_files = copy.deepcopy(list(DATA.keys()))
-				n_1 = int(sync_c.recv(1024).decode("utf-8"))
+				n_1 = sync_c.recv(1024).decode("utf-8")
+				print(colored(f"|{n_1}|", constants.DEBUG))
+				n_1 = int(n_1)
 				n_2 = len(my_files)
 				sync_c.send(str(n_2).encode())
 
@@ -69,7 +71,8 @@ def synchronise():
 				print(colored(str(DATA), constants.DEBUG))
 				print(colored(f"SYNCED SUCCESSFULLY!", constants.SUCCESS))
 						
-		except:
+		except Exception as err:
+			print(err)
 			print(colored(f"UNABLE TO SYNC ", constants.FAILURE))
 
      
@@ -102,7 +105,6 @@ def content_requests_handler():
 				request_c.send(constants.FILE_NOT_FOUND.encode())
 				print(colored(f"REQUESTED FILE NOT FOUND", constants.FAILURE))
 			request_c.close()
-			break
 		except:
 			print(colored(f"CONNECTION ERROR. PLEASE TRY AGAIN.. ", constants.FAILURE))
 
