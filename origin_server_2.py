@@ -75,9 +75,8 @@ def content_requests_handler():
 		if(name in DATA.keys()):
 			request_c.send(DATA[name].encode())
 		else:
-			request_c.send("Data not found".encode())
+			request_c.send(constants.FILE_NOT_FOUND.encode())
 		request_c.close()
-
 
 if __name__ == '__main__':
 
