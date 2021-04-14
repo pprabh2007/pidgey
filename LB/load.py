@@ -144,7 +144,10 @@ def rcv_client(conn,addr):
             
             edge_load_lock.release()
         
-        msg = Client_LB_res(*edge_avail_dict[best_server_index][1])
+        
+
+        msg = Client_LB_res(edge_avail_dict[best_server_index][1][0],edge_avail_dict[best_server_index][1][1])
+        print(edge_avail_dict[best_server_index][1][1])
         edge_avail_lock.release()
         
         msg.send(conn)

@@ -75,3 +75,4 @@ class Client_LB_res():
 			self.received = True
 			ip0, ip1, ip2, ip3, port = unpack(Client_LB_res.signature,arr)
 			self.ip = str(int.from_bytes(ip0, 'big')) + "." + str(int.from_bytes(ip1, 'big')) + "." + str(int.from_bytes(ip2, 'big')) + "." + str(int.from_bytes(ip3, 'big'))
+			self.port = port

@@ -67,7 +67,7 @@ while True:
                 n_msg = Client_LB_res()
                 n_msg.receive(s)
                 prev_edge_ip = n_msg.ip
-                print(prev_edge_ip)
+                print(prev_edge_ip, n_msg.port)
                 input("Press enter to connect to edge server!")
                 if n_msg.ip=='0.0.0.0':
                     print("No edge servers available.")
