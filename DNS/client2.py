@@ -1,14 +1,20 @@
 #!/usr/bin/env python3
-
+import sys
+sys.path.insert(0, "../")
 import socket
+from constants import *
+from Messages.DNS import *
 
-HOST = '127.0.0.1'  # The server's hostname or IP address
-PORT = 6542        # The port used by the server
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
+s.connect((DNS_IP, DNS_PORT))
 
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.connect((HOST, PORT))
-    s.sendall(b'1 www.chutiyahotum.com')
-    data = s.recv(1024)
-    print(data)
+# while True:
+msg = DNSreq(1,"www.tuchutiya.com")
+while(True):
+    msg.send(s)
 
-print('Received', repr(data))
+    msg1 = DNSres()
+
+    msg1.receive(s)
+
+    print(msg1.ipblocks)
