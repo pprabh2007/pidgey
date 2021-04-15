@@ -1,0 +1,3 @@
+cd origin_servers
+cd origin_server_1
+python origin_server_1.py

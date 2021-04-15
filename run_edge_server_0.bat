@@ -1,0 +1,2 @@
+cd edge_servers
+python edge_server_0.py
