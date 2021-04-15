@@ -6,6 +6,7 @@ import selectors
 import socket
 from constants import *
 from Messages.DNS import *
+from threading import Timer, Thread, Lock
 
 
 sel = selectors.DefaultSelector()
@@ -23,6 +24,7 @@ hostname_ip = {}
 def accept(sock, mask ):
     conn, addr = sock.accept()
     conn.setblocking(False)
+    # call read on read on conn
     sel.register(conn, selectors.EVENT_READ, read)
 
 def read(conn, mask):
@@ -39,6 +41,18 @@ def read(conn, mask):
             hostname_ip[msg.hostname].append((msg.ip, msg.port))
         else:
             hostname_ip[msg.hostname] = [(msg.ip, msg.port)]
+        return
+
+    if msg.hostname not in hostname_ip:
+        ipblocks=[]
+    else:
+        ipblocks = hostname_ip[msg.hostname][0:2]
+
+    while( len(ipblocks) < 2):
+        ipblocks.append(('0.0.0.0', 0))
+
+    response = DNSres(ipblocks)
+    response.send(conn)
 
     # print(hostname_ip)
 
@@ -52,8 +66,22 @@ def read(conn, mask):
     #     else:
     #         return conn.sendall(bytes(hostname_ip[vals[1]], 'utf-8'))
 
-
+# on reading on sock, call accept
 sel.register(sock, selectors.EVENT_READ, accept)
+
+# threads = []
+# for every incoming connection create a thread
+
+# while(True):
+#     conn, addr = sock.accept()
+#     t= Thread(target = read , args = (conn,addr))
+#     threads.append(t)
+#     t.start()
+# sock.close()
+
+# close the threads
+# for t in threads:
+#     t.join()
 
 # for incoming connection
 while True:
