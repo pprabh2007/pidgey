@@ -5,6 +5,7 @@ import socket
 from threading import Timer, Thread, Lock
 from Messages.edge_LB import *
 from Messages.client_LB import *
+from Messages.DNS import *
 import time
 from constants import *
 
@@ -160,8 +161,17 @@ def rcv_client(conn,addr):
 
 
 # Edge server handler thread
-t_edge_server_hb = Thread(target = establish_edge)
-t_edge_server_hb.start()
+t_edge_handler = Thread(target = establish_edge)
+t_edge_handler.start()
+
+# Register itself to DNS
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)    
+s.connect((DNS_IP, DNS_PORT))
+
+print("Adding IP to DNS")
+msg = DNSreq(0, "www.tuchutiya.com", LOAD_IP, CLIENT_PORT)
+msg.send(s)
+s.close()
 
 # Serve clients
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -176,4 +186,4 @@ while(True):
     t = Thread(target = rcv_client,args = (c,addr))
     t.start()
 
-t_edge_server_hb.join()
+t_edge_handler.join()

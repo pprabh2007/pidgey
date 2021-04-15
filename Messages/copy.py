@@ -6,36 +6,44 @@ from .message import *
 from config import *
 from struct import *
 
-class EdgeHeartbeatMessage(Message):
+class DNSRequestMessage(Message):
 
 	"""
-	loc (integer)
-	load (integer) number of requests
+	service_id (integer) :	0 - add_entry
+				 			1 - get_ip
+	hostname (string)
+	ip (string)
+	port (integer)
 	"""
-
-	signature = 'HQ'
+	signature = 'B'+str(HOSTNAME_MAX_LEN)+'s4cH'
 	size = calcsize(signature)
 
-	def __init__(self, loc = None, load = None):
-		if loc is None:
-			loc = 1
-		self.loc = loc
-		if load is None:
-			load = 0
-		self.load = load
+	def __init__(self, service_id, hostname, ip = None, port = None):
+		self.service_id = service_id
+		if len(hostname) > HOSTNAME_MAX_LEN:
+			raise Exception("Length of hostname must be less than 249 characters!")
+		self.hostname = hostname
+		if service_id == 0:
+			self.ip = ip
+			self.port = port
+		else:
+			self.ip = "0.0.0.0"
+			self.port = 0
 
 	def send(self, soc):
-		soc.send(pack(EdgeHeartbeatMessage.signature, self.loc, self.load))
+		ip = self.ip
+		ip = ip.split('.')
+		ip = [int(i).to_bytes(1, 'big') for i in ip]
+		soc.send(pack(DNSRequestMessage.signature, self.service_id, self.hostname.encode(), ip[0], ip[1], ip[2], ip[3], self.port))
 
 	def receive(self, soc):
-		soc.settimeout(MSG_DELAY+5*EDGE_HEARTBEAT_TIME)
-		try:
-			arr = soc.recv(EdgeHeartbeatMessage.size)
-			if len(arr) < EdgeHeartbeatMessage.size:
-				self.received = False
-			else:
-				self.received = True
-				self.loc,self.load = unpack(EdgeHeartbeatMessage.signature, arr)
-		except Exception as e:
-			print(e)
+		arr = soc.recv(DNSRequestMessage.size)
+		if len(arr) < DNSRequestMessage.size:
 			self.received = False
+		else:
+			self.received = True
+			service_id, hostname, ip0, ip1, ip2, ip3, port = unpack(DNSRequestMessage.signature, arr)
+			self.service_id = service_id
+			self.hostname = hostname.decode().strip()
+			self.ip = str(int.from_bytes(ip0, 'big')) + "." + str(int.from_bytes(ip1, 'big')) + "." + str(int.from_bytes(ip2, 'big')) + "." + str(int.from_bytes(ip3, 'big'))
+			self.port = port
