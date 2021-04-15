@@ -5,8 +5,6 @@ sys.path.insert(0, "../")
 from constants import *
 from struct import *
 
-MSG_DELAY = 5
-EDGE_HEARTBEAT_TIME = 1
 
 class Edge_LB():
 

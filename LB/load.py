@@ -8,6 +8,7 @@ from Messages.client_LB import *
 from Messages.DNS import *
 import time
 from constants import *
+from termcolor import colored
 
 # locks and dicts
 edge_avail_dict = []
@@ -18,16 +19,13 @@ edge_load_lock = Lock()
 # Handles incoming connections from edge server
 def establish_edge():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # host = LOAD_IP
-    # port = EDGE_PORT
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.bind((LOAD_IP, EDGE_PORT))
-
     sock.listen(EDGE_MAX)
 
     threads = []
 
-    # for every incoming connection create a thread
+    # for every incoming connection create a thread that is handles by rcv edge
     while(True):
         conn, addr = sock.accept()
         t= Thread(target = recv_edge , args = (conn,addr))
@@ -48,7 +46,6 @@ def recv_edge(conn,addr):
 
     # initial message handler
     if (msg.received):
-        print("New edge server connected", addr)
         # atomically add the load of edge server to dict
         edge_load_lock.acquire()
         edge_load_dict[addr] = msg.load
@@ -57,16 +54,19 @@ def recv_edge(conn,addr):
         # prev load keeps track of last known load of the edge server
         prev_load = msg.load
 
-        # atomically add edge server to liust of availible edge severs
+        # atomically add edge server to list of availible edge severs
         edge_avail_lock.acquire()
         edge_avail_dict.append((msg.loc, addr,msg.load))
         edge_avail_lock.release()
+
+        print(colored("New edge server connected : " + str(addr),SUCCESS))
     
     # for every consequtive message received
     while True:
         msg = Edge_LB()
         msg.receive(conn)
         if not msg.received:
+            print(colored("Edge server closed connection from : " + str(addr),FAILURE))
             break
         # if load has changed
         elif prev_load!=msg.load:
@@ -76,7 +76,7 @@ def recv_edge(conn,addr):
             edge_load_lock.release()
             prev_load = msg.load
          
-        print("Message received from edge server - ", addr)
+        print("Message(heartbeat) received from edge server - ", addr)
 
     # if message is not received
     # search for the edge server
@@ -90,7 +90,7 @@ def recv_edge(conn,addr):
             edge_load_lock.acquire()
             del edge_load_dict[addr]
             edge_load_lock.release()
-            print("connection closed from edge server - ", addr)
+            print("Removed following edge edge server from availible list - ", addr)
             break
     # close the connection
     conn.close()
@@ -114,7 +114,7 @@ def rcv_client(conn,addr):
 
         # no edge servers availaible
         if(len(edge_avail_dict)==0):
-            msg = Client_LB_res('0.0.0.0',EDGE_PORT)
+            msg = Client_LB_res('0.0.0.0', 0)
             edge_avail_lock.release()
             msg.send(conn)
             conn.close()
@@ -154,7 +154,11 @@ def rcv_client(conn,addr):
         msg = Client_LB_res(edge_avail_dict[best_server_index][1][0],edge_avail_dict[best_server_index][1][1])
         edge_avail_lock.release()
         
-        msg.send(conn)
+        try:
+            msg.send(conn)
+        except:
+            print(colored("connection by client has already been closed, edge server IP not sent",FAILURE))
+            return
 
     conn.close()
 
@@ -168,8 +172,8 @@ t_edge_handler.start()
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)    
 s.connect((DNS_IP, DNS_PORT))
 
-print("Adding IP to DNS")
-msg = DNSreq(0, "www.tuchutiya.com", LOAD_IP, CLIENT_PORT)
+print("Registering load balancer IP to DNS")
+msg = DNSreq(0, LB_DOMAIN, LOAD_IP, CLIENT_PORT)
 msg.send(s)
 s.close()
 

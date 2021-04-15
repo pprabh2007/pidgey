@@ -7,12 +7,6 @@ from constants import *
 
 class Client_LB_req():
 
-	"""
-	content_id (integer)
-	loc_id (interger)
-	prev_edge_ip (string containing IP address)
-	"""
-
 	signature = "HH4c"
 	size = calcsize(signature)
 
@@ -25,6 +19,8 @@ class Client_LB_req():
 		loc_id = self.loc_id
 		content_id = self.content_id
 		prev_edge_ip = self.prev_edge_ip
+
+		# splitting up IP to set as ints
 		ip = prev_edge_ip.split('.')
 		ip = [int(i).to_bytes(1, 'big') for i in ip]
 		soc.send(pack(Client_LB_req.signature,content_id,loc_id,ip[0],ip[1],ip[2],ip[3]))
@@ -47,11 +43,6 @@ class Client_LB_req():
 				self.prev_edge_ip = str(int.from_bytes(ip0, 'big')) + "." + str(int.from_bytes(ip1, 'big')) + "." + str(int.from_bytes(ip2, 'big')) + "." + str(int.from_bytes(ip3, 'big'))
 
 class Client_LB_res():
-
-	"""
-	ip (ip address in the form of string)
-	port (a integer number)
-	"""
 
 	signature = '4cH'
 	size = calcsize(signature)

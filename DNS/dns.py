@@ -7,6 +7,7 @@ import socket
 from constants import *
 from Messages.DNS import *
 from threading import Timer, Thread, Lock
+from termcolor import colored
 
 
 sel = selectors.DefaultSelector()
@@ -18,53 +19,60 @@ sock.bind((DNS_IP, DNS_PORT))
 
 sock.listen(DNS_MAX_LISTEN)
 
+# dictionary to store mapping of domain and Ips
 hostname_ip = {}
 
 # accept incoming connection
 def accept(sock, mask ):
-    conn, addr = sock.accept()
-    conn.setblocking(False)
-    # call read on read on conn
-    sel.register(conn, selectors.EVENT_READ, read)
+    try:
+        conn, addr = sock.accept()
+        conn.setblocking(False)
+
+        # call read on read on conn
+        print(colored("connection acceoted from:" + str(conn), SUCCESS))
+        sel.register(conn, selectors.EVENT_READ, read)       
+    except:
+        print(colored("Connection failed, Returning", FAILURE))
+        return
+    return
 
 def read(conn, mask):
     msg = DNSreq(0)
     msg.receive(conn)
     if not msg.received:
+        print(colored("No further message received. Closing connection" ,FAILURE))
         sel.unregister(conn)
         conn.close()
         return 
-
+    # add DNS record
     if(msg.add_flag == 0):
         print("adding entry:", msg.hostname, ",", (msg.ip,msg.port))
         if msg.hostname in hostname_ip:
             hostname_ip[msg.hostname].append((msg.ip, msg.port))
         else:
             hostname_ip[msg.hostname] = [(msg.ip, msg.port)]
+        print(colored("DNS Entry successfully added", SUCCESS))
         return
-
+    # else search for record, if not found
     if msg.hostname not in hostname_ip:
         ipblocks=[]
     else:
+        # select the first 2 ips
         ipblocks = hostname_ip[msg.hostname][0:2]
 
+    # if number of records is less than 2 , add 0.0.0.0 to it
     while( len(ipblocks) < 2):
         ipblocks.append(('0.0.0.0', 0))
 
     response = DNSres(ipblocks)
-    response.send(conn)
+    try:
+        response.send(conn)
+    except:
+        print(colored("Unable to send response to client. Skipping.", FAILURE))
+    finally:
+        return
+    
 
-    # print(hostname_ip)
-
-    # if(vals[0] == '0'):#Add Entry to Table 
-    #     hostname_ip[vals[1]] = vals[2]
-    #     return conn.sendall(b'IP Added to DNS')
-    # else:
-    #     print(vals)
-    #     if(vals[1]) not in hostname_ip.keys():
-    #         return conn.sendall(b"0.0.0.0")
-    #     else:
-    #         return conn.sendall(bytes(hostname_ip[vals[1]], 'utf-8'))
 
 # on reading on sock, call accept
 sel.register(sock, selectors.EVENT_READ, accept)
