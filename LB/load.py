@@ -114,7 +114,7 @@ def rcv_client(conn,addr):
 
         # no edge servers availaible
         if(len(edge_avail_dict)==0):
-            msg = Client_LB_res('0.0.0.0',EDGE_PORT)
+            msg = Client_LB_res('0.0.0.0', 0)
             edge_avail_lock.release()
             msg.send(conn)
             conn.close()
