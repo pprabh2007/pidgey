@@ -25,7 +25,7 @@ def send(filename, data):
 		i = i + 1
 		try:
 			sock.connect((IP, PORT))
-			print(f"CONNECTED TO {IP} AT {PORT}")
+			print(colored(f"CONNECTED TO {IP} AT {PORT}", constants.SUCCESS))
 			break
 		except:
 			print(colored(f"COULD NOT CONNECT TO {IP} AT {PORT}. RETRYING.. ", constants.FAILURE))
