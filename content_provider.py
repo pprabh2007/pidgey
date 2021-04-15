@@ -8,9 +8,15 @@ from threading import Timer, Thread
 from termcolor import colored
 import selectors
 import constants
+from Messages.Messages import *
 
-def send(filename, data):
 
+def send(filename):
+	fcm = FileContentMessage(filename)
+	if(not fcm.checkFile()):
+		print(colored("FILE NOT FOUND", constants.FAILURE))
+		return
+		
 	try:
 		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -33,7 +39,8 @@ def send(filename, data):
 
 	while(True):
 		try:
-			sock.send((filename+"/"+data).encode())
+			fcm.send_name(sock)
+			fcm.send_file(sock)
 			sock.close()
 			print(colored(f"DATA SENT SUCCESSFULLY", constants.SUCCESS))
 			break
@@ -43,5 +50,4 @@ def send(filename, data):
 if __name__ == "__main__":
 	while(True):
 		filename = input()
-		data = input()
-		send(filename, data)
+		send(filename)

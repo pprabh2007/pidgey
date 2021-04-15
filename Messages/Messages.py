@@ -1,12 +1,16 @@
 import sys
 import socket
+import constants
+from termcolor import colored
+import os.path
 sys.path.insert(0, "../")
 
-class RequestContentMessage(): #between client and edgeserver
+class RequestContentMessage(): #between client and edgeserver as well as between edge server and origin server
 	
 	def __init__(self):
 		self.filename = "" #before calling initialise filename	
 		self.file_exists=True
+
 	def send(self, soc):
 		# edge server ko name send kar raha
 		soc.send(self.filename.encode())
@@ -65,6 +69,62 @@ class ResponseContentMessage(): # between edgeserver and client ... to send file
 		data = conn.recv(1024)
 		filename += data.decode()
 		self.filename = filename 
+
+
+class FileContentMessage():
+	def __init__(self, filename = ""):
+		self.filename = filename
+		self.exists = False
+
+	def send_name(self, sock_con):
+		sock_con.send(self.filename.encode())
+
+	def receive_name(self, sock_con):
+		self.filename = sock_con.recv(1024).decode("utf-8").strip()
+
+	def checkFile(self):
+		return os.path.exists(self.filename)
+
+	def send_status(self, sock_con):
+		if(self.exists):
+			sock_con.send(constants.FILE_FOUND.encode())
+		else:
+			sock_con.send(constants.FILE_NOT_FOUND.encode())
+
+	def receive_status(self, sock_con):
+		status = sock_con.recv(1024).decode("utf-8")
+		if(status == constants.FILE_FOUND):
+			return True
+		else:
+			return False
+
+	def send_file(self, sock_con):
+		file_to_send = open(self.filename, "rb")
+		data = file_to_send.read(1024)
+		while data:
+			print("Sending file to client")
+			sock_con.send(data)
+			print(data.decode())
+			data = file_to_send.read(1024)
+		file_to_send.close()
+		print(colored("FILE SENT", constants.DEBUG))
+
+	def receive_file(self, sock_con):
+		# edge server ka reply recieve karo yaha par
+		try:
+			file_received = open(self.filename + "_recv", "wb")
+			while True:
+				print("Recieving file ....")
+				data = sock_con.recv(1024)
+				print(data.decode())
+				file_received.write(data)
+				if len(data) < 1024 :
+					break
+			file_received.close()
+			print(colored("FILE RECEIVED", constants.DEBUG))
+			return True
+		except:
+			return False
 
 # socket ==> s
 # x = RequestContentMessage()

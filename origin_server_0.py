@@ -9,6 +9,7 @@ from threading import Timer, Thread
 import selectors
 import constants
 import copy
+from Messages.Messages import *
 
 DATA = {'a': "lol"}
 
@@ -82,14 +83,14 @@ def synchronise():
 
 	    
 def store_content():
+	fcm = FileContentMessage()
 	while(True):
 		try:
 			store_c, store_addr = store_s.accept()
-			name, content = store_c.recv(1024).decode("utf-8").split("/")
-			DATA[name] = content
+			fcm.receive_name(store_c)
+			fcm.receive_file(store_c)
 			store_c.close()
-			print(colored(f"DATA STORED SUCCESSFULLY!", constants.SUCCESS))
-			break
+			print(f"DATA STORED SUCCESSFULLY!")
 		except:
 			print(colored(f"DATA COULD NOT BE STORED", constants.FAILURE))
 
