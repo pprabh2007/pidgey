@@ -8,7 +8,7 @@ from threading import Timer, Thread
 from termcolor import colored
 import selectors
 import constants
-
+from Messages.Messages import *
 def request(filename):
 	while(True):
 		try:
@@ -33,13 +33,19 @@ def request(filename):
 
 	while(True):
 		try:
-			sock.send(filename.encode())
-			content = sock.recv(1024).decode("utf-8")
-			if(content == constants.FILE_NOT_FOUND):
-				print(colored(f"FILE {filename} NOT FOUND", constants.FAILURE))
-			else:
-				print(colored(f"CONTENTS OF FILE {filename} ARE:", constants.SUCCESS))
-				print(content)
+			#sock.send(filename.encode())
+			Edge_Server_Request=RequestContentMessage()
+			Edge_Server_Request.filename=filename
+			Edge_Server_Request.send(sock)
+			#content = sock.recv(1024).decode("utf-8")
+			Edge_Server_Request.receive(sock)
+			if(Edge_Server_Request.file_exists==False):
+				print(colored(f"FILE NOT FOUND. RETRYING..",constants.FAILURE))
+			# if(content == constants.FILE_NOT_FOUND):
+			# 	print(colored(f"FILE {filename} NOT FOUND", constants.FAILURE))
+			# else:
+			# 	print(colored(f"CONTENTS OF FILE {filename} ARE:", constants.SUCCESS))
+			# 	print(content)
 			sock.close()
 			break
 		except:

@@ -10,7 +10,8 @@ import selectors
 import constants
 import copy
 from Messages.edge_LB import *
-CACHED_DATA = {}
+from Messages.Messages import *
+CACHED_DATA = {"client_edgeserver_test.txt":1}
 
 EDGE_SERVER_INDEX = 0
 IP, REQUEST_PORT = constants.EDGE_SERVERS_REQUEST_CREDENTIALS[EDGE_SERVER_INDEX]
@@ -20,27 +21,14 @@ request_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 request_s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 request_s.bind(('', REQUEST_PORT)) 
 request_s.listen(0)
-# def send_heartbeat():
-
-# 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
-# 	s.connect((LOAD_IP, EDGE_PORT))
-
-# 	msg = Edge_LB(1,5)
-
-# 	while True:
-# 	    print(msg.send(s))
-# 	    time.sleep(constants.EDGE_HEARTBEAT_TIME)
-
-
-
 
 def get_from_origin_servers(filename):
 	try:
 		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-		print(colored("SOCKET CREATED!",constants.SUCCESS))
+		print(colored("SOCKET TO FETCH FROM ORIGIN SERVERS INITIALISED",constants.SUCCESS))
 	except:
-		print(colored("SOCKET COULD NOT BE CREATED!",constants.FAILURE))
+		print(colored("SOCKET TO FETCH FROM ORIGIN SERVERS COULD NOT BE INITIALISED",constants.FAILURE))
 		return
 
 	i = 0
@@ -49,10 +37,10 @@ def get_from_origin_servers(filename):
 		i = i + 1
 		try:
 			sock.connect((IP, PORT))
-			print(colored(f"CONNECTED TO {IP} AT {PORT}",constants.SUCCESS))
+			print(colored(f"CONNECTED TO ORIGIN SERVER {IP} AT {PORT}",constants.SUCCESS))
 			break
 		except:
-			print(colored(f"COULD NOT CONNECT TO {IP} AT {PORT}. RETRYING....",constants.FAILURE))
+			print(colored(f"COULD NOT CONNECT TO ORIGIN SERVER {IP} AT {PORT}. RETRYING..",constants.FAILURE))
 			time.sleep(1)
 
 	while(True):
@@ -67,7 +55,7 @@ def get_from_origin_servers(filename):
 				CACHED_DATA[filename] = content
 				return True
 		except:
-			print(colored(f"COULD NOT SEND DATA! RETRYING.."),constants.FAILURE)
+			print(colored(f"COULD NOT SEND DATA! RETRYING.."), constants.FAILURE)
 
 def content_requests_handler():
 	while(True):
@@ -75,7 +63,10 @@ def content_requests_handler():
 		name = request_c.recv(1024).decode("utf-8").strip()
 		print(colored(f'FILE REQUESTED: {name}', constants.DEBUG))
 		if(name in CACHED_DATA.keys()):
-			request_c.send(CACHED_DATA[name].encode())
+			Edge_Server_Client=ResponseContentMessage()
+			Edge_Server_Client.filename=name
+			Edge_Server_Client.send(request_c)
+			#request_c.send(CACHED_DATA[name].encode())
 			print(colored(f'CACHED COPY FOUND', constants.DEBUG))
 			print(colored(f'FILE SENT', constants.SUCCESS))
 		else:

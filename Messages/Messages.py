@@ -6,7 +6,7 @@ class RequestContentMessage(): #between client and edgeserver
 	
 	def __init__(self):
 		self.filename = "" #before calling initialise filename	
-
+		self.file_exists=True
 	def send(self, soc):
 		# edge server ko name send kar raha
 		soc.send(self.filename.encode())
@@ -19,15 +19,27 @@ class RequestContentMessage(): #between client and edgeserver
 	
 	def receive(self, conn): # send conn wala socket
 		# edge server ka reply recieve karo yaha par
-		file_received = open(self.filename, "wb")
-		while True:
-			#print("Recieving file ....")
-			data = conn.recv(1024)
-			file_received.write(data)
-			if len(data) < 1024 :
-				break
-		file_received.close()
-		print("file received from edge server")
+		try:
+			file_received = open(self.filename+"_receivedcopy", "wb")
+			while True:
+				#print("Recieving file ....")
+				data = conn.recv(1024)
+				print(data.decode())
+				file_received.write(data)
+				if len(data) < 1024 :
+					break
+			file_received.close()
+			print("file received from edge server")
+		except:
+			self.file_exists=False
+		# while True:
+		# 	#print("Recieving file ....")
+		# 	data = conn.recv(1024)
+		# 	file_received.write(data)
+		# 	if len(data) < 1024 :
+		# 		break
+		# file_received.close()
+		# print("file received from edge server")
 
 
 class ResponseContentMessage(): # between edgeserver and client ... to send file
@@ -54,8 +66,8 @@ class ResponseContentMessage(): # between edgeserver and client ... to send file
 		filename += data.decode()
 		self.filename = filename 
 
-socket ==> s
-x = RequestContentMessage()
-x.filename = "file1"
-x.send(s)
-x.receive(s)
+# socket ==> s
+# x = RequestContentMessage()
+# x.filename = "file1"
+# x.send(s)
+# x.receive(s)
