@@ -1,10 +1,9 @@
 import sys
+sys.path.insert(0, "../")
 import socket
 import constants
 from termcolor import colored
 import os.path
-sys.path.insert(0, "../")
-
 class RequestContentMessage(): #between client and edgeserver as well as between edge server and origin server
 	
 	def __init__(self):
@@ -82,8 +81,9 @@ class FileContentMessage():
 	def receive_name(self, sock_con):
 		self.filename = sock_con.recv(1024).decode("utf-8").strip()
 
-	def checkFile(self):
-		return os.path.exists(self.filename)
+	def checkExists(self):
+		self.exists = os.path.exists(self.filename)
+		return self.exists
 
 	def send_status(self, sock_con):
 		if(self.exists):
@@ -112,7 +112,7 @@ class FileContentMessage():
 	def receive_file(self, sock_con):
 		# edge server ka reply recieve karo yaha par
 		try:
-			file_received = open(self.filename + "_recv", "wb")
+			file_received = open(self.filename, "wb")
 			while True:
 				print("Recieving file ....")
 				data = sock_con.recv(1024)

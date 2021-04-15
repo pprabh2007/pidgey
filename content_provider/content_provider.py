@@ -1,6 +1,8 @@
 from _thread import *
 import socket
-import sys 
+import sys
+sys.path.insert(0, ".")
+sys.path.insert(0, "../")
 import os 
 import time
 import sched
@@ -13,10 +15,10 @@ from Messages.Messages import *
 
 def send(filename):
 	fcm = FileContentMessage(filename)
-	if(not fcm.checkFile()):
+	if(not fcm.checkExists()):
 		print(colored("FILE NOT FOUND", constants.FAILURE))
 		return
-		
+
 	try:
 		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)

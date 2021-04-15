@@ -1,82 +1,88 @@
 from _thread import *
 import socket
-import sys 
+import sys
+sys.path.insert(0, "../../")
 import os 
 import time
 import sched
-from threading import Timer, Thread
 from termcolor import colored
+from threading import Timer, Thread
 import selectors
 import constants
 import copy
 from Messages.Messages import *
 
-DATA = {'b': "F"}
+DATA = {'a': "lol"}
 
-SERVER_INDEX = 1
+SERVER_INDEX = 0
 IP, STORE_PORT = constants.ORIGIN_SERVERS_STORE_CREDENTIALS[SERVER_INDEX]
 IP, REQUEST_PORT = constants.ORIGIN_SERVERS_REQUEST_CREDENTIALS[SERVER_INDEX]
-
+#SYNC_PORT = 
 while(True):
 	try:
 		store_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
 		store_s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		store_s.bind(('', STORE_PORT)) 
 		store_s.listen(0)
-
+    
 		request_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
 		request_s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		request_s.bind(('', REQUEST_PORT)) 
 		request_s.listen(0)
 
-		sync_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
-		sync_s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-		sync_s.bind(('', constants.SYNC_PORT_2)) 
-		sync_s.listen(0)
-		sync_s.settimeout(constants.TIMEOUT_PERIOD)
 		print(colored(f"ORIGIN SERVER {SERVER_INDEX} INITIALISED SUCCESSFULLY", constants.SUCCESS))
 		break
 	except:
 		print(colored(f"COULD NOT INITIALISE SERVER {SERVER_INDEX}. RETRYING..", constants.FAILURE))
 
+		
+
 def synchronise():
 	while(True):
+		IP, PORT = "localhost", constants.SYNC_PORT_2
 		try:
-			sync_c, sync_addr = sync_s.accept()
-			sync_c.settimeout(constants.TIMEOUT_PERIOD)
-			print(colored(f"SYNCING CAPABILITIES WITH {sync_addr} INITIALISED", constants.SUCCESS))
+			sync_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			sync_s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+			sync_s.settimeout(constants.TIMEOUT_PERIOD)
+			sync_s.connect((IP, PORT))
+			print(colored(f"SYNCING CAPABILITIES WITH {IP} AT {PORT} INITIALISED", constants.SUCCESS))
 			while(True):
 				my_files = copy.deepcopy(list(DATA.keys()))
-				n_1 = int(sync_c.recv(1024).decode("utf-8"))
-				n_2 = len(my_files)
-				sync_c.send(str(n_2).encode())
-
-				for i in range(n_1):
-					filename = sync_c.recv(1024).decode()
-					if(filename in DATA.keys()):
-						sync_c.send(constants.FILE_FOUND.encode())
-					else:
-						sync_c.send(constants.FILE_NOT_FOUND.encode())
-						content = sync_c.recv(1024).decode()
-						DATA[filename] = content
+				n_1 = len(my_files)
+				sync_s.send(str(n_1).encode())
+				n_2 = int(sync_s.recv(1024).decode())
 
 				for filename in my_files:
-					sync_c.send(filename.encode())
-					response = sync_c.recv(1024).decode()
+					sync_s.send(filename.encode())
+					response = sync_s.recv(1024).decode()
 					if(response == constants.FILE_NOT_FOUND):
-						sync_c.send(DATA[filename].encode())
+						sync_s.send(DATA[filename].encode())
 					else:
 						pass
+
+				for i in range(n_2):
+					filename = sync_s.recv(1024).decode()
+					if(filename in DATA.keys()):
+						sync_s.send(constants.FILE_FOUND.encode())
+					else:
+						sync_s.send(constants.FILE_NOT_FOUND.encode())
+						content = sync_s.recv(1024).decode()
+						DATA[filename] = content
 				print(colored(str(DATA), constants.DEBUG))
 				print(colored(f"SYNCED SUCCESSFULLY!", constants.SUCCESS))
-						
+				time.sleep(constants.SYNCING_PERIOD)
+			sync_s.close()
 		except Exception as err:
 			print(err)
-			print(colored(f"UNABLE TO SYNC ", constants.FAILURE))
+			print(colored(f"UNABLE TO SYNC WITH {IP} AT {PORT}. RETRYING..", constants.FAILURE))
+			try:
+				sync_s.close()
+			except:
+				pass
+			time.sleep(1)
 
-     
 
-
+	    
 def store_content():
 	fcm = FileContentMessage()
 	while(True):
@@ -85,30 +91,35 @@ def store_content():
 			fcm.receive_name(store_c)
 			fcm.receive_file(store_c)
 			store_c.close()
-			print(colored(f"DATA STORED SUCCESSFULLY!", constants.SUCCESS))
+			print(f"DATA STORED SUCCESSFULLY!")
 		except:
 			print(colored(f"DATA COULD NOT BE STORED", constants.FAILURE))
 
 
 def content_requests_handler():
+	fcm = FileContentMessage()
+
 	while(True):
 		try:
 			request_c, request_addr = request_s.accept()
 			#print(colored(f"ACCEPTED REQUEST FOR DATA FROM {request_addr}", constants.SUCCESS))
-			name = request_c.recv(1024).decode("utf-8").strip()
-			print(colored(f"NAME OF FILE REQUESTED {name}", constants.DEBUG))
-			if(name in DATA.keys()):
-				request_c.send(DATA[name].encode())
+			fcm.receive_name(request_c)
+			print(colored(f"NAME OF FILE REQUESTED {fcm.filename}", constants.DEBUG))
+			if(fcm.checkExists()):
+				fcm.send_status(request_c)
+				fcm.send_file(request_c)
 				print(colored(f"REQUESTED FILE DELIVERED SUCCESSFULLY", constants.SUCCESS))
 			else:
-				request_c.send(constants.FILE_NOT_FOUND.encode())
+				fcm.send_status(request_c)
 				print(colored(f"REQUESTED FILE NOT FOUND", constants.FAILURE))
 			request_c.close()
 		except:
-			print(colored(f"CONNECTION ERROR. PLEASE TRY AGAIN.. ", constants.FAILURE))
+			print(colored(f"CONNECTION ERROR. PLEASE TRY AGAIN..", constants.FAILURE))
+
+
 
 if __name__ == '__main__':
-
+	
 	threads = []
 	
 	t1 = Thread(target = store_content)

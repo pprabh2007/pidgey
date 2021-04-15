@@ -1,6 +1,7 @@
 from _thread import *
 import socket
 import sys 
+sys.path.insert(0, "../")
 import os 
 import time
 import sched
@@ -9,6 +10,7 @@ from termcolor import colored
 import selectors
 import constants
 from Messages.Messages import *
+
 def request(filename):
 	while(True):
 		try:
@@ -32,21 +34,16 @@ def request(filename):
 			time.sleep(1)
 
 	while(True):
+		fcm = FileContentMessage(filename)
 		try:
-			#sock.send(filename.encode())
-			Edge_Server_Request=RequestContentMessage()
-			Edge_Server_Request.filename=filename
-			Edge_Server_Request.send(sock)
-			#content = sock.recv(1024).decode("utf-8")
-			Edge_Server_Request.receive(sock)
-			if(Edge_Server_Request.file_exists==False):
-				print(colored(f"FILE NOT FOUND. RETRYING..",constants.FAILURE))
-			# if(content == constants.FILE_NOT_FOUND):
-			# 	print(colored(f"FILE {filename} NOT FOUND", constants.FAILURE))
-			# else:
-			# 	print(colored(f"CONTENTS OF FILE {filename} ARE:", constants.SUCCESS))
-			# 	print(content)
-			sock.close()
+			fcm.send_name(sock)
+			status = fcm.receive_status(sock)
+			if(status):
+				fcm.receive_file(sock)
+				print(colored(f"FILE RECEIVED.",constants.SUCCESS))
+			else:
+				print(colored(f"FILE NOT RECEIVED.",constants.FAILURE))
+				sock.close()
 			break
 		except:
 			print(colored(f"UNABLE TO FETCH. RETRYING..", constants.FAILURE))
