@@ -19,6 +19,7 @@ class DNSreq():
 		self.port = port
 
 	def send(self, soc):
+		# splitting up ip to send as ints
 		ip = self.ip
 		ip = ip.split('.')
 		ip = [int(i).to_bytes(1, 'big') for i in ip]
@@ -33,6 +34,7 @@ class DNSreq():
 			add_flag, hostname, ip0, ip1, ip2, ip3, port = unpack(DNSreq.signature, arr)
 			self.add_flag = add_flag
 			self.hostname = hostname.decode().strip()
+			# re assembling IP
 			self.ip = str(int.from_bytes(ip0, 'big')) + "." + str(int.from_bytes(ip1, 'big')) + "." + str(int.from_bytes(ip2, 'big')) + "." + str(int.from_bytes(ip3, 'big'))
 			self.port = port
 

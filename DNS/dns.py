@@ -24,12 +24,16 @@ hostname_ip = {}
 
 # accept incoming connection
 def accept(sock, mask ):
-    conn, addr = sock.accept()
+    try:
+        conn, addr = sock.accept()
+        conn.setblocking(False)
 
-    conn.setblocking(False)
-    # call read on read on conn
-    print(colored("connection acceoted from:" + str(conn), SUCCESS))
-    sel.register(conn, selectors.EVENT_READ, read)
+        # call read on read on conn
+        print(colored("connection acceoted from:" + str(conn), SUCCESS))
+        sel.register(conn, selectors.EVENT_READ, read)       
+    except:
+        print(colored("Connection failed, Returning", FAILURE))
+        return
     return
 
 def read(conn, mask):
