@@ -47,27 +47,35 @@ def synchronise():
 			sync_c.settimeout(constants.TIMEOUT_PERIOD)
 			print(colored(f"SYNCING CAPABILITIES WITH {sync_addr} INITIALISED", constants.SUCCESS))
 			while(True):
-				my_files = copy.deepcopy(list(DATA.keys()))
+
+				curr_files = os.listdir()
+				my_files = []
+				for file in curr_files:
+					if not file.endswith(".py"):
+						my_files.append(file)
 				n_1 = int(sync_c.recv(1024).decode("utf-8"))
 				n_2 = len(my_files)
 				sync_c.send(str(n_2).encode())
 
+				fcm = FileContentMessage()
 				for i in range(n_1):
-					filename = sync_c.recv(1024).decode()
-					if(filename in DATA.keys()):
-						sync_c.send(constants.FILE_FOUND.encode())
+					fcm.receive_name(sync_c)
+					if(fcm.checkExists()):
+						fcm.send_status(sync_c)
 					else:
-						sync_c.send(constants.FILE_NOT_FOUND.encode())
-						content = sync_c.recv(1024).decode()
-						DATA[filename] = content
+						fcm.send_status(sync_c)
+						fcm.receive_file(sync_c)
 
+				fcm = FileContentMessage()
 				for filename in my_files:
-					sync_c.send(filename.encode())
-					response = sync_c.recv(1024).decode()
-					if(response == constants.FILE_NOT_FOUND):
-						sync_c.send(DATA[filename].encode())
-					else:
+					fcm.set_name(filename)
+					fcm.send_name(sync_c)
+					status = fcm.receive_status(sync_c)
+					if(status):
 						pass
+					else:
+						fcm.send_file(sync_c)
+
 				print(colored(str(DATA), constants.DEBUG))
 				print(colored(f"SYNCED SUCCESSFULLY!", constants.SUCCESS))
 						

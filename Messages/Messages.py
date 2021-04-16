@@ -75,6 +75,12 @@ class FileContentMessage():
 		self.filename = filename
 		self.exists = False
 
+	def set_name(self, filename):
+		self.filename = filename
+
+	def get_name(self):
+		return self.filename
+
 	def send_name(self, sock_con):
 		sock_con.send(self.filename.encode())
 
