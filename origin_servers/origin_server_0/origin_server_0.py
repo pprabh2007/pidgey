@@ -42,6 +42,8 @@ while(True):
 
 		
 def synchronise():
+	global DELETE_QUEUE_CLOCK
+	global DELETE_QUEUE
 	while(True):
 		IP, PORT = "localhost", constants.SYNC_PORT_2
 		try:
@@ -54,13 +56,15 @@ def synchronise():
 
 
 				dqm_self = DeleteQueueMessage(DELETE_QUEUE, DELETE_QUEUE_CLOCK)
-				dqm_self.send(sync_s)
+				dqm_self.send_q(sync_s)
 
 				dqm_other = DeleteQueueMessage()
-				dqm_other.receive(sync_s)
+				dqm_other.receive_q(sync_s)
 
 				if(dqm_other.DQ_CLOCK > dqm_self.DQ_CLOCK):
-					DELETE_QUEUE = dqm_other.DQ
+					DELETE_QUEUE = copy.deepcopy(dqm_other.DQ)
+				
+				time.sleep(1)
 
 				curr_files = os.listdir()
 				my_files = []
@@ -97,7 +101,8 @@ def synchronise():
 				print(colored(f"SYNCED SUCCESSFULLY!", constants.SUCCESS))
 				time.sleep(constants.SYNCING_PERIOD)
 			sync_s.close()
-		except:
+		except Exception as e:
+			print(e)
 			print(colored(f"UNABLE TO SYNC WITH {IP} AT {PORT}. RETRYING..", constants.FAILURE))
 			try:
 				sync_s.close()
@@ -108,6 +113,8 @@ def synchronise():
 
 	    
 def store_content():
+	global DELETE_QUEUE_CLOCK
+	global DELETE_QUEUE
 	fcm = FileContentMessage()
 	while(True):
 		try:
@@ -125,6 +132,8 @@ def store_content():
 
 
 def content_requests_handler():
+	global DELETE_QUEUE_CLOCK
+	global DELETE_QUEUE
 	fcm = FileContentMessage()
 
 	while(True):
@@ -133,7 +142,7 @@ def content_requests_handler():
 			#print(colored(f"ACCEPTED REQUEST FOR DATA FROM {request_addr}", constants.SUCCESS))
 			fcm.receive_name(request_c)
 			print(colored(f"NAME OF FILE REQUESTED {fcm.filename}", constants.DEBUG))
-			if(fcm.checkExists() and fcm.filename not in DELETE_QUEUE):
+			if(fcm.checkExists(DELETE_QUEUE) ):
 				fcm.send_status(request_c)
 				fcm.send_file(request_c)
 				print(colored(f"REQUESTED FILE DELIVERED SUCCESSFULLY", constants.SUCCESS))
@@ -146,6 +155,7 @@ def content_requests_handler():
 
 def delete():
 	global DELETE_QUEUE_CLOCK
+	global DELETE_QUEUE
 	fcm = FileContentMessage()
 	while(True):
 		try:

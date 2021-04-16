@@ -87,8 +87,10 @@ class FileContentMessage():
 	def receive_name(self, sock_con):
 		self.filename = sock_con.recv(1024).decode("utf-8").strip()
 
-	def checkExists(self):
+	def checkExists(self, delete_queue = []):
 		self.exists = os.path.exists(self.filename)
+		if self.filename in delete_queue:
+			self.exists = False
 		return self.exists
 
 	def send_status(self, sock_con):
@@ -138,24 +140,39 @@ class DeleteQueueMessage():
 		self.DQ = DQ
 		self.DQ_CLOCK = DQ_CLOCK
 
-	def pack_to_string(array, value):
-		result = constants.DELIMITER.join(array)
-		result = str(value) + constants.DELIMITER + result
-		return result
+	# def pack_to_string(array, value):
+	# 	result = constants.DELIMITER.join(array)
+	# 	result = str(value) + constants.DELIMITER + result
+	# 	return result
 
-	def unpack_to_array(result):
-		array = result.split(constants.DELIMITER)
+	# def unpack_to_array(result):
+	# 	print(result)
+	# 	array = result.split(constants.DELIMITER)
+	# 	print("array : ",array)
+	# 	value = int(array[0])
+	# 	array = array[1:]
+	# 	return (value, array)
+
+	def send_q(self, sock_con):
+		result = constants.DELIMITER.join(self.DQ)
+		if(len(result) > 0):
+			result = str(self.DQ_CLOCK) + constants.DELIMITER + result
+		else:
+			result = str(self.DQ_CLOCK)
+		# packed_DQ = DeleteQueueMessage.pack_to_string(self.DQ, self.DQ_CLOCK)
+		# print("send packed_dq :",result)
+		sock_con.send(result.encode())
+
+	def receive_q(self, sock_con):
+		packed_DQ = sock_con.recv(1024).decode("utf-8")
+		# print("recd packed_dq :",packed_DQ)
+
+		array = packed_DQ.split(constants.DELIMITER)
+		# print("array : ",array)
 		value = int(array[0])
 		array = array[1:]
-		return (value, array)
-
-	def send(self, sock_con):
-		packed_DQ = DeleteQueueMessage.pack_to_string(self.DQ, self.DQ_CLOCK)
-		sock_con.send(packed_DQ.encode())
-
-	def receive(self, sock_con):
-		packed_DQ = sock_con.recv(1024).decode("utf-8")
-		self.DQ_CLOCK, self.DQ = DeleteQueueMessage.unpack_to_array(packed_DQ)
+		
+		self.DQ_CLOCK, self.DQ = value, array
 
 
 # socket ==> s
