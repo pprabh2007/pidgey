@@ -17,20 +17,36 @@ edge_avail_lock  = Lock()
 edge_load_dict = {}
 edge_load_lock = Lock()
 
-def send_beat():
-    s= socket.socket()
-    s.connect((LOAD_BACKUP_IP,BACKUP_PORT))
+PRIMARY_FAILED = False
+
+def LB_heartbeat():
+    global PRIMARY_FAILED
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    sock.bind((LOAD_BACKUP_IP, BACKUP_PORT))
+    sock.listen(1)
+    conn,addr = sock.accept()
 
     while(True):
+
+        if(PRIMARY_FAILED):
+            conn,addr = sock.accept()
+            print("connection accepted")
+            PRIMARY_FAILED = False
+
         msg = LB_beat()
-        msg.send(s)
-        time.sleep(LB_HEARTBEAT_TIME)
+        try:
+            msg.receive(conn)
+            PRIMARY_FAILED = False
+        except:
+            PRIMARY_FAILED = True
 
 # Handles incoming connections from edge server
 def establish_edge():
+    global PRIMARY_FAILED
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    sock.bind((LOAD_IP, EDGE_PORT))
+    sock.bind((LOAD_BACKUP_IP, BEDGE_PORT))
     sock.listen(EDGE_MAX)
 
     threads = []
@@ -38,6 +54,8 @@ def establish_edge():
     # for every incoming connection create a thread that is handles by rcv edge
     while(True):
         conn, addr = sock.accept()
+        if(not PRIMARY_FAILED):
+            break
         t= Thread(target = recv_edge , args = (conn,addr))
         threads.append(t)
         t.start()
@@ -172,32 +190,64 @@ def rcv_client(conn,addr):
 
     conn.close()
 
-backup_lb = Thread(target = send_beat)
+
+def client_handler():
+    # Serve clients
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    sock.bind((LOAD_BACKUP_IP,BACKUP_PORT))
+    sock.listen(MAX_CLIENT_REQUESTS)
+
+    while(True):
+        c, addr = sock.accept()
+        t = Thread(target = rcv_client,args = (c,addr))
+        t.start()
+
+
+try:
+    # Register itself to DNS
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)    
+    s.connect((DNS_IP, DNS_PORT))
+    print("Registering load balancer IP to DNS")
+    msg = DNSreq(0, LB_DOMAIN, LOAD_BACKUP_IP, BACKUP_PORT)
+    msg.send(s)
+    s.close()
+except:
+    print("DNS not added")
+
+backup_lb = Thread(target = LB_heartbeat)
 backup_lb.start()
 
-# Edge server handler thread
-t_edge_handler = Thread(target = establish_edge)
-t_edge_handler.start()
-
-# Register itself to DNS
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)    
-s.connect((DNS_IP, DNS_PORT))
-
-print("Registering load balancer IP to DNS")
-msg = DNSreq(0, LB_DOMAIN, LOAD_IP, CLIENT_PORT)
-msg.send(s)
-s.close()
-
-# Serve clients
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-sock.bind((LOAD_IP,CLIENT_PORT))
-sock.listen(MAX_CLIENT_REQUESTS)
-
+PREV_FAILED = False
 while(True):
-    c, addr = sock.accept()
-    t = Thread(target = rcv_client,args = (c,addr))
-    t.start()
+    # print(PRIMARY_FAILED)
+    if(PRIMARY_FAILED and PRIMARY_FAILED!= PREV_FAILED):
+        print(colored("Primary server failed", FAILURE))
+        # Edge server handler thread
+        t_edge_handler = Thread(target = establish_edge)
+        t_edge_handler.start()
 
-t_edge_handler.join()
+        t_client_handler = Thread(target= client_handler)
+        t_client_handler.start()
+
+
+        # # Serve clients
+        # sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        # sock.bind((LOAD_BACKUP_IP,BACKUP_PORT))
+        # sock.listen(MAX_CLIENT_REQUESTS)
+
+        # while(True):
+        #     c, addr = sock.accept()
+        #     t = Thread(target = rcv_client,args = (c,addr))
+        #     t.start()
+
+        if(not PRIMARY_FAILED):
+            t_client_handler.join()
+            t_edge_handler.join()
+
+    PREV_FAILED = PRIMARY_FAILED
+
+t_client_handler.join()
+t_edge_handler.join()      
 backup_lb.join()
