@@ -172,7 +172,8 @@ def cleaner():
 	global DELETE_QUEUE
 	files = os.listdir()
 	for file in DELETE_QUEUE:
-		os.remove(file)
+		if file in files:
+			os.remove(file)
 	time.sleep(constants.TIMEOUT_PERIOD)
 
 if __name__ == '__main__':

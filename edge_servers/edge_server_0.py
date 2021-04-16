@@ -99,8 +99,11 @@ def content_requests_handler():
 def cleaner():
 	global DELETE_QUEUE
 	files = os.listdir()
-	for file in DELETE_QUEUE:
-		os.remove(file)
+	for file in files:
+		if file.endswith(".py"):
+			pass
+	else:
+		os.remove(file)	
 	time.sleep(30)
 
 if __name__ == "__main__":
