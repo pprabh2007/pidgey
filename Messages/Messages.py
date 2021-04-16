@@ -110,9 +110,9 @@ class FileContentMessage():
 		file_to_send = open(self.filename, "rb")
 		data = file_to_send.read(1024)
 		while data:
-			print("Sending file to client")
+			print("Sending file")
 			sock_con.send(data)
-			print(data.decode())
+			#print(data.decode())
 			data = file_to_send.read(1024)
 		file_to_send.close()
 		print(colored("FILE SENT", constants.DEBUG))
@@ -124,7 +124,7 @@ class FileContentMessage():
 			while True:
 				print("Recieving file ....")
 				data = sock_con.recv(1024)
-				print(data.decode())
+				#print(data.decode())
 				file_received.write(data)
 				if len(data) < 1024 :
 					break

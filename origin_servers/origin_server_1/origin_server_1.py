@@ -165,9 +165,15 @@ def delete():
 		except:
 			print(colored(f"FILE COULD NOT BE DELETED", constants.FAILURE))
 
+def cleaner():
+	global DELETE_QUEUE
+	files = os.listdir()
+	for file in DELETE_QUEUE:
+		os.remove(file)
+	time.sleep(constants.TIMEOUT_PERIOD)
 
 if __name__ == '__main__':
-
+	
 	threads = []
 	
 	t1 = Thread(target = store_content)
@@ -185,6 +191,10 @@ if __name__ == '__main__':
 	t4 = Thread(target = delete)
 	threads.append(t4)
 	t4.start()
+
+	t5 = Thread(target = cleaner)
+	threads.append(t5)
+	t5.start()
 
 	for t in threads:
 		t.join()

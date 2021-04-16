@@ -96,6 +96,23 @@ def content_requests_handler():
 					print(colored(f'FILE NOT AVAILABLE', constants.FAILURE))
 		request_c.close()
 
+def cleaner():
+	global DELETE_QUEUE
+	files = os.listdir()
+	for file in DELETE_QUEUE:
+		os.remove(file)
+	time.sleep(30)
+
 if __name__ == "__main__":
-	#send_heartbeat()
-	content_requests_handler()
+	threads = []
+	
+	t1 = Thread(target = content_requests_handler)
+	threads.append(t1)
+	t1.start()
+	
+	t2 = Thread(target = cleaner)
+	threads.append(t2)
+	t2.start()
+
+	for t in threads:
+		t.join()
