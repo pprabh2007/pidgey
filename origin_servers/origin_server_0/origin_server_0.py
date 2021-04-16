@@ -53,30 +53,33 @@ def synchronise():
 				for file in curr_files:
 					if not file.endswith(".py"):
 						my_files.append(file)
+
+				print(my_files)
+
 				n_1 = len(my_files)
 				sync_s.send(str(n_1).encode())
 				n_2 = int(sync_s.recv(1024).decode())
 
-				fcm = FileContentMessage()
 				for filename in my_files:
-					fcm.set_name(filename)
+					fcm = FileContentMessage(filename)
 					fcm.send_name(sync_s)
 					status = fcm.receive_status(sync_s)
 					if(status):
 						pass
 					else:
 						fcm.send_file(sync_s)
+					time.sleep(1)
 
-				fcm = FileContentMessage()
 				for i in range(n_2):
+					fcm = FileContentMessage()
 					fcm.receive_name(sync_s)
 					if(fcm.checkExists()):
 						fcm.send_status(sync_s)
 					else:
 						fcm.send_status(sync_s)
 						fcm.receive_file(sync_s)
+					time.sleep(1)
 
-				print(colored(str(DATA), constants.DEBUG))
 				print(colored(f"SYNCED SUCCESSFULLY!", constants.SUCCESS))
 				time.sleep(constants.SYNCING_PERIOD)
 			sync_s.close()
