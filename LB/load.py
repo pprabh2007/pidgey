@@ -19,7 +19,11 @@ edge_load_lock = Lock()
 
 def send_beat():
     s= socket.socket()
-    s.connect((LOAD_BACKUP_IP,BACKUP_PORT))
+    try:
+        s.connect((LOAD_BACKUP_IP,BACKUP_PORT))
+    except:
+        print(colored("BACKUP SERVER is not running", FAILURE))
+        return
 
     while(True):
         msg = LB_beat()
@@ -179,14 +183,17 @@ backup_lb.start()
 t_edge_handler = Thread(target = establish_edge)
 t_edge_handler.start()
 
-# Register itself to DNS
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)    
-s.connect((DNS_IP, DNS_PORT))
 
-print("Registering load balancer IP to DNS")
-msg = DNSreq(0, LB_DOMAIN, LOAD_IP, CLIENT_PORT)
-msg.send(s)
-s.close()
+try:
+# Register itself to DNS
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)    
+    s.connect((DNS_IP, DNS_PORT))
+    print("Registering load balancer IP to DNS")
+    msg = DNSreq(0, LB_DOMAIN, LOAD_IP, CLIENT_PORT)
+    msg.send(s)
+    s.close()
+except:
+    print(colored("Could not register on DNS",FAILURE))
 
 # Serve clients
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

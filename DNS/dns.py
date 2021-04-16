@@ -44,11 +44,12 @@ def read(conn, mask):
         sel.unregister(conn)
         conn.close()
         return 
-    # add DNS record
+    # add DNS record(unique)
     if(msg.add_flag == 0):
         print("adding entry:", msg.hostname, ",", (msg.ip,msg.port))
         if msg.hostname in hostname_ip:
-            hostname_ip[msg.hostname].append((msg.ip, msg.port))
+            if((msg.ip,msg.port ) not in hostname_ip[msg.hostname]):
+                hostname_ip[msg.hostname].append((msg.ip, msg.port))
         else:
             hostname_ip[msg.hostname] = [(msg.ip, msg.port)]
         print(colored("DNS Entry successfully added", SUCCESS))
