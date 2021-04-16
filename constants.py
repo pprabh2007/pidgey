@@ -51,3 +51,13 @@ LOCATION[0] = (0.,0.)
 LOCATION[1] = (0.,1.)
 LOCATION[2] = (1.,0.)
 LOCATION[3] = (1.,1.)
+
+DELIMITER = "###"
+
+def pack_array(array):
+	result = DELIMITER.join(array)
+	return result
+
+def unpack_array(result):
+	array = result.split(DELIMITER)
+	return array
