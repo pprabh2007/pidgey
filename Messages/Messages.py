@@ -132,6 +132,32 @@ class FileContentMessage():
 		except:
 			return False
 
+
+class DeleteQueueMessage():
+	def __init__(self, DQ, DQ_CLOCK):
+		self.DQ = DQ
+		self.DQ_CLOCK = DQ_CLOCK
+
+	def pack_to_string(array, value):
+		result = constants.DELIMITER.join(array)
+		result = str(value) + constants.DELIMITER + result
+		return result
+
+	def unpack_to_array(result):
+		array = result.split(constants.DELIMITER)
+		value = int(array[0])
+		array = array[1:]
+		return (value, array)
+
+	def send(self, sock_con):
+		packed_DQ = pack_to_string(self.DQ, self.DQ_CLOCK)
+		sock_con.send(packed_DQ.encode())
+
+	def receive(self, sock_con):
+		packed_DQ = sock_con.recv(1024).decode("utf-8")
+		self.DQ_CLOCK, self.DQ = unpack_to_array(packed_DQ)
+
+
 # socket ==> s
 # x = RequestContentMessage()
 # x.filename = "file1"

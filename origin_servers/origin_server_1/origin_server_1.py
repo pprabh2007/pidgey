@@ -12,12 +12,12 @@ import constants
 import copy
 from Messages.Messages import *
 
-DATA = {'b': "F"}
-
+DELETE_QUEUE = []
+DELETE_QUEUE_CLOCK = 0
 SERVER_INDEX = 1
 IP, STORE_PORT = constants.ORIGIN_SERVERS_STORE_CREDENTIALS[SERVER_INDEX]
 IP, REQUEST_PORT = constants.ORIGIN_SERVERS_REQUEST_CREDENTIALS[SERVER_INDEX]
-
+DELETE_PORT = 10008
 while(True):
 	try:
 		store_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
@@ -35,6 +35,12 @@ while(True):
 		sync_s.bind(('', constants.SYNC_PORT_2)) 
 		sync_s.listen(0)
 		sync_s.settimeout(constants.TIMEOUT_PERIOD)
+
+		delete_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
+		delete_s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+		delete_s.bind(('', DELETE_PORT)) 
+		delete_s.listen(0)
+
 		print(colored(f"ORIGIN SERVER {SERVER_INDEX} INITIALISED SUCCESSFULLY", constants.SUCCESS))
 		break
 	except:
@@ -48,10 +54,20 @@ def synchronise():
 			print(colored(f"SYNCING CAPABILITIES WITH {sync_addr} INITIALISED", constants.SUCCESS))
 			while(True):
 
+				dqm_other = DeleteQueueMessage()
+				dqm_other.receive()
+
+				dqm_self = DeleteQueueMessage(DELETE_QUEUE, DELETE_QUEUE_CLOCK)
+				dqm_self.send()
+
+				if(dqm_other.DQ_CLOCK > dqm_self.DQ_CLOCK):
+					DELETE_QUEUE = dqm_other.DQ
+					
+
 				curr_files = os.listdir()
 				my_files = []
 				for file in curr_files:
-					if not file.endswith(".py"):
+					if not file.endswith(".py") and not in DELETE_QUEUE:
 						my_files.append(file)
 
 				print(my_files)
@@ -96,6 +112,9 @@ def store_content():
 		try:
 			store_c, store_addr = store_s.accept()
 			fcm.receive_name(store_c)
+			while(fcm.filenmae in DELETE_QUEUE):
+				DELETE_QUEUE.remove(fcm.filename)
+				DELETE_QUEUE_CLOCK = DELETE_QUEUE_CLOCK + 1
 			fcm.receive_file(store_c)
 			store_c.close()
 			print(colored(f"DATA STORED SUCCESSFULLY!", constants.SUCCESS))
@@ -104,21 +123,37 @@ def store_content():
 
 
 def content_requests_handler():
+	fcm = FileContentMessage()
+
 	while(True):
 		try:
 			request_c, request_addr = request_s.accept()
 			#print(colored(f"ACCEPTED REQUEST FOR DATA FROM {request_addr}", constants.SUCCESS))
-			name = request_c.recv(1024).decode("utf-8").strip()
-			print(colored(f"NAME OF FILE REQUESTED {name}", constants.DEBUG))
-			if(name in DATA.keys()):
-				request_c.send(DATA[name].encode())
+			fcm.receive_name(request_c)
+			print(colored(f"NAME OF FILE REQUESTED {fcm.filename}", constants.DEBUG))
+			if(fcm.checkExists() and fcm.filename not in DELETE_QUEUE):
+				fcm.send_status(request_c)
+				fcm.send_file(request_c)
 				print(colored(f"REQUESTED FILE DELIVERED SUCCESSFULLY", constants.SUCCESS))
 			else:
-				request_c.send(constants.FILE_NOT_FOUND.encode())
+				fcm.send_status(request_c)
 				print(colored(f"REQUESTED FILE NOT FOUND", constants.FAILURE))
 			request_c.close()
 		except:
-			print(colored(f"CONNECTION ERROR. PLEASE TRY AGAIN.. ", constants.FAILURE))
+			print(colored(f"CONNECTION ERROR. PLEASE TRY AGAIN..", constants.FAILURE))
+
+def delete():
+	fcm = FileContentMessage()
+	while(True):
+		try:
+			delete_c, delete_addr = delete_s.accept()
+			fcm.receive_name(delete_c)
+			print(colored(f"NAME OF FILE DELETED: {fcm.filename}", constants.SUCCESS))
+			DELETE_QUEUE.append(fcm.filename)
+			DELETE_QUEUE_CLOCK = DELETE_QUEUE_CLOCK + 1
+		except:
+			print(colored(f"FILE COULD NOT BE DELETED", constants.FAILURE))
+
 
 if __name__ == '__main__':
 
@@ -135,6 +170,10 @@ if __name__ == '__main__':
 	t3 = Thread(target = synchronise)
 	threads.append(t3)
 	t3.start()
+
+	t4 = Thread(target = delete)
+	threads.append(t4)
+	t4.start()
 
 	for t in threads:
 		t.join()
