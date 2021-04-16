@@ -134,7 +134,7 @@ class FileContentMessage():
 
 
 class DeleteQueueMessage():
-	def __init__(self, DQ, DQ_CLOCK):
+	def __init__(self, DQ = [], DQ_CLOCK = 0):
 		self.DQ = DQ
 		self.DQ_CLOCK = DQ_CLOCK
 
@@ -150,12 +150,12 @@ class DeleteQueueMessage():
 		return (value, array)
 
 	def send(self, sock_con):
-		packed_DQ = pack_to_string(self.DQ, self.DQ_CLOCK)
+		packed_DQ = DeleteQueueMessage.pack_to_string(self.DQ, self.DQ_CLOCK)
 		sock_con.send(packed_DQ.encode())
 
 	def receive(self, sock_con):
 		packed_DQ = sock_con.recv(1024).decode("utf-8")
-		self.DQ_CLOCK, self.DQ = unpack_to_array(packed_DQ)
+		self.DQ_CLOCK, self.DQ = DeleteQueueMessage.unpack_to_array(packed_DQ)
 
 
 # socket ==> s

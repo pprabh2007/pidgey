@@ -9,6 +9,7 @@ SYNCING_PERIOD = 8
 
 ORIGIN_SERVERS_STORE_CREDENTIALS = [("localhost", 9999), ("localhost", 8999)]
 ORIGIN_SERVERS_REQUEST_CREDENTIALS = [("localhost", 10000), ("localhost", 9000)]
+ORIGIN_SERVERS_DELETE_CREDENTIALS = [("localhost", 10007), ("localhost", 10008)]
 SYNC_PORT_1 = 10001
 SYNC_PORT_2 = 10002
 NO_OF_ORIGIN_SERVERS = 2
@@ -54,10 +55,3 @@ LOCATION[3] = (1.,1.)
 
 DELIMITER = "###"
 
-def pack_array(array):
-	result = DELIMITER.join(array)
-	return result
-
-def unpack_array(result):
-	array = result.split(DELIMITER)
-	return array

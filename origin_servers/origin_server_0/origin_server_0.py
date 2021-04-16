@@ -17,7 +17,7 @@ DELETE_QUEUE_CLOCK = 0
 SERVER_INDEX = 0
 IP, STORE_PORT = constants.ORIGIN_SERVERS_STORE_CREDENTIALS[SERVER_INDEX]
 IP, REQUEST_PORT = constants.ORIGIN_SERVERS_REQUEST_CREDENTIALS[SERVER_INDEX]
-DELETE_PORT = 10007
+IP, DELETE_PORT = constants.ORIGIN_SERVERS_DELETE_CREDENTIALS[SERVER_INDEX]
 while(True):
 	try:
 		store_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
@@ -54,10 +54,10 @@ def synchronise():
 
 
 				dqm_self = DeleteQueueMessage(DELETE_QUEUE, DELETE_QUEUE_CLOCK)
-				dqm_self.send()
+				dqm_self.send(sync_s)
 
 				dqm_other = DeleteQueueMessage()
-				dqm_other.receive()
+				dqm_other.receive(sync_s)
 
 				if(dqm_other.DQ_CLOCK > dqm_self.DQ_CLOCK):
 					DELETE_QUEUE = dqm_other.DQ
@@ -65,7 +65,7 @@ def synchronise():
 				curr_files = os.listdir()
 				my_files = []
 				for file in curr_files:
-					if not file.endswith(".py") and not in DELETE_QUEUE:
+					if not file.endswith(".py") and file not in DELETE_QUEUE:
 						my_files.append(file)
 
 				print(my_files)
@@ -113,13 +113,14 @@ def store_content():
 		try:
 			store_c, store_addr = store_s.accept()
 			fcm.receive_name(store_c)
-			while(fcm.filenmae in DELETE_QUEUE):
+			while(fcm.filename in DELETE_QUEUE):
 				DELETE_QUEUE.remove(fcm.filename)
 				DELETE_QUEUE_CLOCK = DELETE_QUEUE_CLOCK + 1
 			fcm.receive_file(store_c)
 			store_c.close()
 			print(f"DATA STORED SUCCESSFULLY!")
-		except:
+		except Exception as e:
+			print(e)
 			print(colored(f"DATA COULD NOT BE STORED", constants.FAILURE))
 
 
@@ -144,6 +145,7 @@ def content_requests_handler():
 			print(colored(f"CONNECTION ERROR. PLEASE TRY AGAIN..", constants.FAILURE))
 
 def delete():
+	global DELETE_QUEUE_CLOCK
 	fcm = FileContentMessage()
 	while(True):
 		try:
@@ -152,7 +154,8 @@ def delete():
 			print(colored(f"NAME OF FILE DELETED: {fcm.filename}", constants.SUCCESS))
 			DELETE_QUEUE.append(fcm.filename)
 			DELETE_QUEUE_CLOCK = DELETE_QUEUE_CLOCK + 1
-		except:
+		except Exception as e:
+			print(e)
 			print(colored(f"FILE COULD NOT BE DELETED", constants.FAILURE))
 
 if __name__ == '__main__':
